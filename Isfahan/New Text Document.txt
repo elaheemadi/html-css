@@ -1,0 +1,248 @@
+VirtualHost by Port
+------------
+use the sudo su to go into admin mode
+
+make the directories:
+
+sudo mkdir /var/www/php
+=======================
+
+change permission for the new directory
+
+sudo chown yourlogin:yourlogin /var/www/php
+sudo chmod -R 755 /var/www/php
+
+=======================
+
+put an index.php file inside the directory:
+<? 
+    echo phpinfo();
+?>
+
+=======================
+
+edit the apache web file:
+
+nano /etc/apache2/sites-enabled/000-default.conf
+
+inside insert in another virtual host:
+
+Listen 80
+Listen 8080
+
+<VirtualHost *:8080>
+    DocumentRoot "/var/www/php"
+</VirtualHost>
+
+restart apache:
+sudo /etc/init.d/apache2/restart
+
+
+mod_rewrite
+===========
+
+RewriteRule Pattern Substitution [OptionalFlags]
+
+sudo a2enmod rewrite
+
+<VirtualHost *:80>
+    <Directory /var/www/html>
+        Options Indexes FollowSymLinks MultiViews
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    . . .
+</VirtualHost>
+
+
+
+go to your home directory and create the .htaccess file
+
+so, /var/www/html/.htaccess
+
+
+Inside .htaccess:
+RewriteEngine On
+RewriteRule ^about$ about.html [NC]
+
+
+restart apache
+
+
+http://10.6.133.13/virtual_hosts
+
+in the /etc/apache2/sites-enabled/000-default.conf
+
+Alias /calc /var/www/html/random/analytics
+
+same as creating a link and using Options +FollowSymLinks
+
+
+Redirect to Another Location
+=======================
+
+in the .htaccess file
+
+Redirect temp /example /example/topic
+
+chose temp, permanent, gone (file moved), seeother
+
+
+
+Redirect to Same Location (When case sensitive)
+====================================
+in your .htaccess file
+
+RedirectMatch ^/[fF]ish(ing)?(/.*)? http://fish.example.com/$2
+
+matches using the regular expression and 
+
+
+
+Enable the Spelling Mod for URL (Permitting Case-Insensitive URLs)
+=========================
+
+a2enmod speling
+
+restart apache2 :
+/etc/init.d/apache2 restart
+
+in your 000-default.conf file find your VirtualHost and add:
+
+CheckSpelling On
+
+
+Test your new folder url www.example.com/myPage, www.example.com/MYPAGE
+
+
+
+Rewriting Text You Put Into the URL
+=============================
+
+in your .htaccess file
+
+RewriteRule (.*)cat(.*) $1kittens$2 [N,PT]
+Check the error message to see if it is working correctly. 
+
+
+Preventing People from Stealing Your Images
+===================================
+
+in your .htaccess file
+
+Makes sure that there is a referrer before giving image
+RewriteCond %{HTTP_REFERER} !=""
+RewriteCond %{HTTP_REFERER} !^http://mysite.com/.*$ [NC]
+RewriteRule \.(jpg|gif|png)$ - [F]
+
+
+*** Requires that you have a domain name ***
+*** NOT Guaranteed to work! ***
+
+
+
+Redirecting to SSL Using mod_rewrite instead of mod_ssl
+==============================
+
+in your .htaccess file
+
+RewriteCond %{SERVER_PORT} ^80$
+
+RewriteRule ^(.*)$  https://%{SERVER_NAME}$1 [R,L]
+
+
+This will redirect all entries from port 80 to SSL
+
+OR
+
+Redirect / https://localhost/
+
+
+*** There are trade-offs when using mod_rewrite vs. mod_ssl for this part,
+mod_rewrite will break your Angular code or javascript library codes that require redirection.
+
+
+
+
+
+==================================================
+
+Web Authentication
+=================
+
+Make users login using their Linux credentials
+
+in your VirtualHost add:
+
+        <Directory /var/www/html/mypersonal >
+                AuthType Basic
+                AuthName HomeDir
+                AuthUserFile /etc/passwd 
+                Require valid-user
+                Satisfy All
+        </Directory>
+
+This uses your linux login and password.  Bad idea unless you use SSL otherwise people can see you type your password in plain text.
+
+
+
+Enable the Evasive Mod
+========================
+
+enable or install 
+
+a2enmod evasive
+
+sudo nano /etc/httpd/conf.d/mod_evasive.conf
+
+edit the file:
+
+/etc/apache2/mods-enabled/evasive.conf
+
+ DOSPageCount        2
+    DOSPageInterval     1
+    DOSSiteCount        50
+    DOSSiteInterval     1
+    DOSBlockingPeriod   10
+
+restart apache2
+
+
+
+
+SSL Certificate
+=================
+
+enable the ssl_mod on apache2
+
+a2enmod ssl
+
+reboot the server.
+
+link your 000-default-ssl.conf to your sites-enabled directory:
+ln -s /etc/apache2/sites-available/000-default-ssl.conf /etc/apache2/sites-enable/
+
+
+Generate the cert and key
+
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/server.key -out /etc/ssl/certs/server.crt
+
+
+
+add the lines below to your in your 000-default.conf file:
+
+SSLEngine on
+
+SSLCertificateFile /etc/ssl/certs/server.crt 
+
+SSLCertificateKeyFile /etc/ssl/private/server.key
+
+
+reboot your apache server
+
+try:
+
+https://localhost
+
+
